@@ -1,5 +1,6 @@
 import sys
 import random
+import math
 
 class Rand48(object):
     def __init__(self, seed):
@@ -39,7 +40,7 @@ def checkarrival(time, added,check_process,queue,prior_process,end):
 		return time
 def SJF():
 	time = 0.000
-	guess=1/int(sys.argv[2])
+	guess=1/float(sys.argv[2])
 	estimated={}
 	total_estimated={}
 	alpha=float(sys.argv[6])
@@ -257,18 +258,32 @@ init_time = {}
 num_bursts = {}
 cpu_bursts = {}
 io_bursts = {}
+print(float(sys.argv[3]))
+
+def gen_exp():
+	exp_distr = math.inf
+	while(exp_distr > 3000):
+		unif_distr = r.drand()
+		exp_distr = -1 * (math.log(unif_distr)) / float(sys.argv[2])
+	return exp_distr
+
 
 for i in range(num_processes):
-	init_time[proc[i]] = r.drand() * 1000
+	init_time[proc[i]] = math.floor(gen_exp())
+
 	num_bursts[proc[i]] = int(r.drand() * 100) + 1
 	cpu_bursts[proc[i]] = []
 	io_bursts[proc[i]] = []
 	for j in range(num_bursts[proc[i]]):
-		cpu_bursts[proc[i]].append(r.drand() * 1000)
-		
+		calc_time = math.ceil(gen_exp())
+		cpu_bursts[proc[i]].append(calc_time)
 		if (j != num_bursts[proc[i]]-1):
-			
-			io_bursts[proc[i]].append(r.drand() * 1000)
-print(init_time)
-SJF()
-FCFS()
+			calc_time = math.ceil(gen_exp())
+			io_bursts[proc[i]].append(calc_time)
+
+for i in range(len(proc)):
+	process = proc[i]
+	print("Process %s [NEW] (arrival time %d ms) %d CPU bursts" % (process, init_time[process], num_bursts[process]))
+	for j in range(num_bursts[process] - 1):
+		print("--> CPU burst %d ms --> I/O burst %d ms" % (cpu_bursts[process][j], io_bursts[process][j]))
+	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
