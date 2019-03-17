@@ -37,7 +37,7 @@ io_bursts = {}
 
 def gen_exp():
 	exp_distr = math.inf
-	while(exp_distr > 3000):
+	while(exp_distr > int(sys.argv[3])):
 		unif_distr = r.drand()
 		exp_distr = -1 * (math.log(unif_distr)) / float(sys.argv[2])
 	return exp_distr
@@ -61,6 +61,12 @@ def print_queue(queue):
 		string = string + " " + process
 	return string
 
+# for i in range(len(proc)):
+# 	process = proc[i]
+# 	print("Process %s [NEW] (arrival time %d ms) %d CPU bursts" % (process, init_time[process], num_bursts[process]))
+# 	for j in range(num_bursts[process] - 1):
+# 		print("--> CPU burst %d ms --> I/O burst %d ms" % (cpu_bursts[process][j], io_bursts[process][j]))
+# 	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
 def FCFS():
 	queue = []
 	for i in range(len(proc)):
@@ -71,16 +77,30 @@ def FCFS():
 	# 	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
 	print("time 0ms: Simulator arrived for SJF [Q%s]" % print_queue(queue))
 	fin_processes = []
-	used = False
-	burst_done = 0
+	cpu_burst_tracker = {}
+	CPU_blocked_tracker = -1
+	IO_blocked_tracker = {}
 	time = 0
 	while (len(fin_processes) != num_processes):
 		# check arrival
 		for process in init_time:
 			if time == init_time[process]:
 				queue.append(process)
+				cpu_burst_tracker[process] = 0
 				print("time %dms: Process %s arrived; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
-
+		# add process from queue
+		if (len(queue) != 0):
+			head = queue[0]
+			queue = queue[1:]
+			print("time %dms: Process %s started using the CPU for %dms burst [Q%s]" %(time, head, cpu_bursts[head][cpu_burst_tracker[head]], print_queue(queue)))
+			CPU_blocked_tracker = time + cpu_bursts[head][cpu_burst_tracker[head]]
+			cpu_burst_tracker[head] += 1
+		if (CPU_blocked_tracker == time):
+			print("time %dms: Process %s completed a CPU burst; %d bursts to go [Q%s]" % (time, process, num_bursts[process] - cpu_burst_tracker[process], print_queue(queue)))
+			# print("time %dms: Process %s switching out of CPU; will block on I/O until time %dms [Q%s]", % time, process, io_bursts[process][cpu_burst_tracker[process]-1], print_queue(queue))
+		# for process in blocked_tracker:
+		# 	if time == blocked_tracker[process]:
+		# 		print("time %dms: Process %s completed a CPU burst; %d bursts to go [Q%s]", % time, process, num_bursts[process] - cpu_burst_tracker[process], print_queue(queue))
 
 
 		time += 1
