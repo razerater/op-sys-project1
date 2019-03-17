@@ -60,7 +60,6 @@ def print_queue(queue):
 	for process in queue:
 		string = string + " " + process
 	return string
-
 # for i in range(len(proc)):
 # 	process = proc[i]
 # 	print("Process %s [NEW] (arrival time %d ms) %d CPU bursts" % (process, init_time[process], num_bursts[process]))
@@ -75,44 +74,53 @@ def FCFS():
 	# 	for j in range(num_bursts[process] - 1):
 	# 		print("--> CPU burst %d ms --> I/O burst %d ms" % (cpu_bursts[process][j], io_bursts[process][j]))
 	# 	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
-	print("time 0ms: Simulator arrived for SJF [Q%s]" % print_queue(queue))
+	print("time 0ms: Simulator arrived for FCFS [Q%s]" % print_queue(queue))
 	fin_processes = []
 	cpu_burst_tracker = {}
 	CPU_blocked_tracker = -1
 	IO_blocked_tracker = {}
 	CPU_used = False
 	time = 0
-	while (len(fin_processes) != num_processes):
+	head = ""
+	context_switch_time = 0
+	while (len(fin_processes) < num_processes):
+		# print(time)
 		# check arrival
 		for process in init_time:
 			if time == init_time[process]:
 				queue.append(process)
 				cpu_burst_tracker[process] = 0
 				print("time %dms: Process %s arrived; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
+				if (not CPU_used):
+					head = queue[0]
+					queue = queue[1:]
+					context_switch_time = time + int(sys.argv[5])/2		
 		# add process from queue
-		if (not CPU_used and len(queue) != 0):
-			head = queue[0]
-			queue = queue[1:]
+		if (time == context_switch_time):
 			print("time %dms: Process %s started using the CPU for %dms burst [Q%s]" %(time, head, cpu_bursts[head][cpu_burst_tracker[head]], print_queue(queue)))
 			CPU_blocked_tracker = time + cpu_bursts[head][cpu_burst_tracker[head]]
 			cpu_burst_tracker[head] += 1
-			# if cpu_burst_tracker[head]
 			CPU_used = True
 		if (CPU_blocked_tracker == time):
 			if (num_bursts[head] - cpu_burst_tracker[head] > 0):
 				print("time %dms: Process %s completed a CPU burst; %d bursts to go [Q%s]" % (time, head, num_bursts[head] - cpu_burst_tracker[head], print_queue(queue)))
-				print("time %dms: Process %s switching out of CPU; will block on I/O until time %dms [Q%s]" % (time, head, time + io_bursts[head][cpu_burst_tracker[head]-1], print_queue(queue)))
-				IO_blocked_tracker[head] = time + io_bursts[head][cpu_burst_tracker[head]-1]
+				print("time %dms: Process %s switching out of CPU; will block on I/O until time %dms [Q%s]" % (time, head, time + io_bursts[head][cpu_burst_tracker[head]-1] + 2, print_queue(queue)))
+				head = queue[0]
+				queue = queue[1:]
+				IO_blocked_tracker[head] = time + io_bursts[head][cpu_burst_tracker[head]-1] + 2
+				context_switch_time = time + int(sys.argv[5])
 			else:
-				print("time %dms: Process %s terminated Q[%s]" %(time, head, print_queue(queue)))
+				print("time %dms: Process %s terminated [Q%s]" %(time, head, print_queue(queue)))
+				context_switch_time = time + int(sys.argv[5])
+				fin_processes.append(head)
 			CPU_used = False
-		# print(IO_blocked_tracker)
 		for process in IO_blocked_tracker:
 			if time == IO_blocked_tracker[process]:
 				queue.append(process)
 				print("time %dms: Process %s completed I/O; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
+				if (not CPU_used and len(queue) == 1):
+					context_switch_time = time + int(sys.argv[5])/2	
 		time += 1
-		# if (time == 2000):
-		# 	 break
+	print("time %dms: Simulator ended for FCFS [Q%s]" %(time+1, print_queue(queue)))
 FCFS()
 
