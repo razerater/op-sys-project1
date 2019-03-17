@@ -275,11 +275,9 @@ for i in range(num_processes):
 	cpu_bursts[proc[i]] = []
 	io_bursts[proc[i]] = []
 	for j in range(num_bursts[proc[i]]):
-		calc_time = math.ceil(gen_exp())
-		cpu_bursts[proc[i]].append(calc_time)
+		cpu_bursts[proc[i]].append(math.ceil(gen_exp()))
 		if (j != num_bursts[proc[i]]-1):
-			calc_time = math.ceil(gen_exp())
-			io_bursts[proc[i]].append(calc_time)
+			io_bursts[proc[i]].append(math.ceil(gen_exp()))
 
 for i in range(len(proc)):
 	process = proc[i]
