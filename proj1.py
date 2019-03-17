@@ -82,6 +82,7 @@ def FCFS():
 	CPU_used = False
 	time = 0
 	context_switch_time = -1
+	context_switch_remove = -1
 	while (len(fin_processes) < num_processes):
 		# print(time)
 		# check arrival
@@ -102,21 +103,14 @@ def FCFS():
 			CPU_used = True
 		if (CPU_blocked_tracker == time):
 			if (num_bursts[head] - cpu_burst_tracker[head] > 0):
-				print("time %dms: Process %s completed a CPU burst; %d bursts to go [Q%s]" % (time, head, num_bursts[head] - cpu_burst_tracker[head], print_queue(queue)))
+				print("time %dms: Process %s completed a CPU burst; %d burst%s to go [Q%s]" % (time, head, num_bursts[head] - cpu_burst_tracker[head], "s" if (num_bursts[head] - cpu_burst_tracker[head] > 1) else "", print_queue(queue)))
 				print("time %dms: Process %s switching out of CPU; will block on I/O until time %dms [Q%s]" % (time, head, time + io_bursts[head][cpu_burst_tracker[head]-1] + 2, print_queue(queue)))
 				IO_blocked_tracker[head] = time + io_bursts[head][cpu_burst_tracker[head]-1] + 2
 			else:
 				print("time %dms: Process %s terminated [Q%s]" %(time, head, print_queue(queue)))
-				# context_switch_time = time + int(sys.argv[5])
 				fin_processes.append(head)
-			if (len(queue) != 0):
-				head = queue[0]
-				queue = queue[1:]
-				context_switch_time = time + int(sys.argv[5])
-				CPU_used = True
-			else:
-				CPU_used = False
-		for process in IO_blocked_tracker:
+			context_switch_remove = time + int(sys.argv[5]) / 2
+		for process in sorted(IO_blocked_tracker):
 			if time == IO_blocked_tracker[process]:
 				queue.append(process)
 				print("time %dms: Process %s completed I/O; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
@@ -125,6 +119,14 @@ def FCFS():
 					queue = queue[1:]
 					context_switch_time = time + int(sys.argv[5])/2
 					CPU_used = True
+		if (time == context_switch_remove):
+			if (len(queue) != 0):
+				head = queue[0]
+				queue = queue[1:]
+				context_switch_time = time + int(sys.argv[5])/2
+				CPU_used = True
+			else:
+				CPU_used = False
 		time += 1
 	print("time %dms: Simulator ended for FCFS [Q%s]" %(time+1, print_queue(queue)))
 FCFS()
