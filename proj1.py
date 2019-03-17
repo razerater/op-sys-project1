@@ -74,15 +74,14 @@ def FCFS():
 	# 	for j in range(num_bursts[process] - 1):
 	# 		print("--> CPU burst %d ms --> I/O burst %d ms" % (cpu_bursts[process][j], io_bursts[process][j]))
 	# 	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
-	print("time 0ms: Simulator arrived for FCFS [Q%s]" % print_queue(queue))
+	print("time 0ms: Simulator started for FCFS [Q%s]" % print_queue(queue))
 	fin_processes = []
 	cpu_burst_tracker = {}
 	CPU_blocked_tracker = -1
 	IO_blocked_tracker = {}
 	CPU_used = False
 	time = 0
-	head = ""
-	context_switch_time = 0
+	context_switch_time = -1
 	while (len(fin_processes) < num_processes):
 		# print(time)
 		# check arrival
@@ -105,21 +104,27 @@ def FCFS():
 			if (num_bursts[head] - cpu_burst_tracker[head] > 0):
 				print("time %dms: Process %s completed a CPU burst; %d bursts to go [Q%s]" % (time, head, num_bursts[head] - cpu_burst_tracker[head], print_queue(queue)))
 				print("time %dms: Process %s switching out of CPU; will block on I/O until time %dms [Q%s]" % (time, head, time + io_bursts[head][cpu_burst_tracker[head]-1] + 2, print_queue(queue)))
-				head = queue[0]
-				queue = queue[1:]
 				IO_blocked_tracker[head] = time + io_bursts[head][cpu_burst_tracker[head]-1] + 2
-				context_switch_time = time + int(sys.argv[5])
 			else:
 				print("time %dms: Process %s terminated [Q%s]" %(time, head, print_queue(queue)))
-				context_switch_time = time + int(sys.argv[5])
+				# context_switch_time = time + int(sys.argv[5])
 				fin_processes.append(head)
-			CPU_used = False
+			if (len(queue) != 0):
+				head = queue[0]
+				queue = queue[1:]
+				context_switch_time = time + int(sys.argv[5])
+				CPU_used = True
+			else:
+				CPU_used = False
 		for process in IO_blocked_tracker:
 			if time == IO_blocked_tracker[process]:
 				queue.append(process)
 				print("time %dms: Process %s completed I/O; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
-				if (not CPU_used and len(queue) == 1):
-					context_switch_time = time + int(sys.argv[5])/2	
+				if (not CPU_used):
+					head = queue[0]
+					queue = queue[1:]
+					context_switch_time = time + int(sys.argv[5])/2
+					CPU_used = True
 		time += 1
 	print("time %dms: Simulator ended for FCFS [Q%s]" %(time+1, print_queue(queue)))
 FCFS()
