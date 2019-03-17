@@ -21,230 +21,6 @@ class Rand48(object):
         if n & (1 << 31):
             n -= 1 << 32
         return n   
-def checkarrival(time, added,check_process,queue,prior_process,end):
-	if not end:
-		if check_process not in queue:
-			to_add=init_time[check_process]-init_time[prior_process]
-			if time+added>init_time[check_process]:
-				queue.append(check_process)
-				print("time %.3fms: Process arrival [Q" % (time+to_add), end='')
-				for j in queue:
-					print(" %s" % j, end='')
-				print("]")
-				return time+to_add
-			else:
-				return time
-		else:
-			return time
-	else:
-		return time
-def SJF():
-	time = 0.000
-	guess=1/float(sys.argv[2])
-	estimated={}
-	total_estimated={}
-	alpha=float(sys.argv[6])
-	for i in range(num_processes):
-		estimated[proc[i]]=[]
-		for burst in cpu_bursts[proc[i]]:
-			tau=alpha*burst+(1-alpha)*guess
-			estimated[proc[i]].append(tau)
-			guess=tau
-		total_estimated[proc[i]]=sum(estimated[proc[i]])
-	arrival = [k for k in sorted(init_time, key = init_time.get)]
-	queue=[]
-	priority = [k for k in sorted(total_estimated, key = total_estimated.get)]
-	print(arrival)
-	print("time %.3fms: Start of simulation [Q" % time, end = '')
-	for process in queue:
-		print(" %s" % process, end='')
-	print("]")
-	queue=[]
-	queue.append(arrival[0])
-	time+=init_time[queue[0]]
-	
-	print("time %.3fms: Process arrival [Q" % time, end='')
-	for j in queue:
-		print(" %s" % j, end='')
-	print("]")
-	arrival_num=1
-	end=False
-	while queue!=[]:
-		newqueue=[]
-		for pro in priority:
-			if pro in queue:
-				newqueue.append(pro)
-		queue=newqueue
-		process=queue[0]
-		queue=queue[1:]
-		
-		oldtime=time
-		time=checkarrival(time,int(sys.argv[5])/2,arrival[arrival_num],queue,arrival[arrival_num-1],end)
-		if oldtime!=time:
-			if arrival_num!=len(arrival)-1:
-				arrival_num=arrival_num+1
-			else:
-				end=True
-		time += int(sys.argv[5])/2
-		#checkarrival
-		for burst in range(num_bursts[process] - 1):
-			# print("time %fms: Process start using the CPU [Q" % time, end='')
-			# for j in queue:
-			# 	print(" %s" % j, end='')
-			oldtime=time
-			time=checkarrival(time,cpu_bursts[process][burst],arrival[arrival_num],queue,arrival[arrival_num-1],end)
-			if oldtime!=time:
-				if arrival_num!=len(arrival)-1:
-					arrival_num=arrival_num+1
-				else:
-					end=True
-			time += cpu_bursts[process][burst]
-			
-			#check
-			# print("time %fms: Process finish using the CPU [Q" % time, end='')
-			# for j in queue:
-			# 	print(" %s" % j, end='')
-			# print("]")
-
-			# print("time %fms: Process starts performing I/O [Q" % time, end='')
-			# for j in queue:
-			# 	print(" %s" % j, end='')
-			# print("]")
-			oldtime=time
-			time=checkarrival(time,io_bursts[process][burst],arrival[arrival_num],queue,arrival[arrival_num-1],end)
-			if oldtime!=time:
-				if arrival_num!=len(arrival)-1:
-					arrival_num=arrival_num+1
-				else:
-					end=True
-			time += io_bursts[process][burst]
-			#check
-			# print("time %fms: Process finishes performing I/O [Q" % time, end='')
-			# for j in queue:
-			# 	print(" %s" % j, end='')
-			# print("]")
-
-		# Last CPU Burst
-		# print("time %fms: Process start using the CPU [Q" % time, end='')
-		# for j in queue:
-		# 	print(" %s" % j, end='')
-		# print("]")
-		oldtime=time
-		time=checkarrival(time,cpu_bursts[process][num_bursts[process]-1],arrival[arrival_num],queue,arrival[arrival_num-1],end)
-		if oldtime!=time:
-			if arrival_num!=len(arrival)-1:
-				arrival_num=arrival_num+1
-			else:
-				end=True
-		time += cpu_bursts[process][num_bursts[process]-1]
-		#check
-		# print("time %.3fms: Process terminates by finishing its last CPU burst [Q" % time, end='')
-		# for j in queue:
-		# 	print(" %s" % j, end='')
-		# print("]")
-		oldtime=time
-		time=checkarrival(time,int(sys.argv[5])/2,arrival[arrival_num],queue,arrival[arrival_num-1],end)
-		if oldtime!=time:
-			if arrival_num!=len(arrival)-1:
-				arrival_num=arrival_num+1
-			else:
-				end=True
-		time += int(sys.argv[5])/2
-		
-		#check
-	print("time %.3fms: Simulator ended for SJF [Q]" % time)
-
-def FCFS():
-	time = 0.0
-	arrival = [k for k in sorted(init_time, key = init_time.get)]
-	queue=[]
-	print("time %.3fms: Start of simulation [Q" % time, end = '')
-	for process in queue:
-		print(" %s" % process, end='')
-	print("]")
-	queue.append(arrival[0])
-	time+=init_time[queue[0]]
-	
-	print("time %.3fms: Process arrival [Q" % time, end='')
-	for j in queue:
-		print(" %s" % j, end='')
-	print("]")
-	arrival_num=1
-	end=False
-	while queue!=[]:
-		process=queue[0]
-		queue = queue[1:]
-		
-		oldtime=time
-		time=checkarrival(time,int(sys.argv[5])/2,arrival[arrival_num],queue,arrival[arrival_num-1],end)
-		if oldtime!=time:
-			if arrival_num!=len(arrival)-1:
-				arrival_num=arrival_num+1
-			else:
-				end=True
-		time += int(sys.argv[5])/2
-		for burst in range(num_bursts[process] - 1):
-			# print("time %fms: Process start using the CPU [Q" % time, end='')
-			# for j in queue:
-			# 	print(" %s" % j, end='')
-			# print("]")
-			oldtime=time
-			time=checkarrival(time,cpu_bursts[process][burst],arrival[arrival_num],queue,arrival[arrival_num-1],end)
-			if oldtime!=time:
-				if arrival_num!=len(arrival)-1:
-					arrival_num=arrival_num+1
-				else:
-					end=True
-			time += cpu_bursts[process][burst]
-			# print("time %fms: Process finish using the CPU [Q" % time, end='')
-			# for j in queue:
-			# 	print(" %s" % j, end='')
-			# print("]")
-
-			# print("time %fms: Process starts performing I/O [Q" % time, end='')
-			# for j in queue:
-			# 	print(" %s" % j, end='')
-			# print("]")
-			oldtime=time
-			time=checkarrival(time,cpu_bursts[process][burst],arrival[arrival_num],queue,arrival[arrival_num-1],end)
-			if oldtime!=time:
-				if arrival_num!=len(arrival)-1:
-					arrival_num=arrival_num+1
-				else:
-					end=True
-			time += io_bursts[process][burst]
-			# print("time %fms: Process finishes performing I/O [Q" % time, end='')
-			# for j in queue:
-			# 	print(" %s" % j, end='')
-			# print("]")
-
-		# Last CPU Burst
-		# print("time %fms: Process start using the CPU [Q" % time, end='')
-		# for j in queue:
-		# 	print(" %s" % j, end='')
-		# print("]")
-		oldtime=time
-		time=checkarrival(time,cpu_bursts[process][num_bursts[process]-1],arrival[arrival_num],queue,arrival[arrival_num-1],end)
-		if oldtime!=time:
-			if arrival_num!=len(arrival)-1:
-				arrival_num=arrival_num+1
-			else:
-				end=True
-		time += cpu_bursts[process][num_bursts[process]-1]
-		# print("time %.3fms: Process terminates by finishing its last CPU burst [Q" % time, end='')
-		# for j in queue:
-		# 	print(" %s" % j, end='')
-		# print("]")
-		oldtime=time
-		time=checkarrival(time,int(sys.argv[5])/2,arrival[arrival_num],queue,arrival[arrival_num-1],end)
-		if oldtime!=time:
-			if arrival_num!=len(arrival)-1:
-				arrival_num=arrival_num+1
-			else:
-				end=True
-		time += int(sys.argv[5])/2
-		
-	print("time %.3fms: Simulator ended for FCFS [Q]" % time)
 
 # Seed RNG
 r = Rand48(0)
@@ -258,7 +34,6 @@ init_time = {}
 num_bursts = {}
 cpu_bursts = {}
 io_bursts = {}
-print(float(sys.argv[3]))
 
 def gen_exp():
 	exp_distr = math.inf
@@ -267,7 +42,7 @@ def gen_exp():
 		exp_distr = -1 * (math.log(unif_distr)) / float(sys.argv[2])
 	return exp_distr
 
-
+# initialize values
 for i in range(num_processes):
 	init_time[proc[i]] = math.floor(gen_exp())
 
@@ -278,10 +53,38 @@ for i in range(num_processes):
 		cpu_bursts[proc[i]].append(math.ceil(gen_exp()))
 		if (j != num_bursts[proc[i]]-1):
 			io_bursts[proc[i]].append(math.ceil(gen_exp()))
+def print_queue(queue):
+	if (len(queue) == 0):
+		return " <empty>"
+	string = ""
+	for process in queue:
+		string = string + " " + process
+	return string
 
-for i in range(len(proc)):
-	process = proc[i]
-	print("Process %s [NEW] (arrival time %d ms) %d CPU bursts" % (process, init_time[process], num_bursts[process]))
-	for j in range(num_bursts[process] - 1):
-		print("--> CPU burst %d ms --> I/O burst %d ms" % (cpu_bursts[process][j], io_bursts[process][j]))
-	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
+def FCFS():
+	queue = []
+	for i in range(len(proc)):
+		process = proc[i]
+		print("Process %s [NEW] (arrival time %d ms) %d CPU bursts" % (process, init_time[process], num_bursts[process]))
+	# 	for j in range(num_bursts[process] - 1):
+	# 		print("--> CPU burst %d ms --> I/O burst %d ms" % (cpu_bursts[process][j], io_bursts[process][j]))
+	# 	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
+	print("time 0ms: Simulator arrived for SJF [Q%s]" % print_queue(queue))
+	fin_processes = []
+	used = False
+	burst_done = 0
+	time = 0
+	while (len(fin_processes) != num_processes):
+		# check arrival
+		for process in init_time:
+			if time == init_time[process]:
+				queue.append(process)
+				print("time %dms: Process %s arrived; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
+
+
+
+		time += 1
+		if (time == 2000):
+			 break
+FCFS()
+
