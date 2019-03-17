@@ -80,6 +80,7 @@ def FCFS():
 	cpu_burst_tracker = {}
 	CPU_blocked_tracker = -1
 	IO_blocked_tracker = {}
+	CPU_used = False
 	time = 0
 	while (len(fin_processes) != num_processes):
 		# check arrival
@@ -89,22 +90,29 @@ def FCFS():
 				cpu_burst_tracker[process] = 0
 				print("time %dms: Process %s arrived; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
 		# add process from queue
-		if (len(queue) != 0):
+		if (not CPU_used and len(queue) != 0):
 			head = queue[0]
 			queue = queue[1:]
 			print("time %dms: Process %s started using the CPU for %dms burst [Q%s]" %(time, head, cpu_bursts[head][cpu_burst_tracker[head]], print_queue(queue)))
 			CPU_blocked_tracker = time + cpu_bursts[head][cpu_burst_tracker[head]]
 			cpu_burst_tracker[head] += 1
+			# if cpu_burst_tracker[head]
+			CPU_used = True
 		if (CPU_blocked_tracker == time):
-			print("time %dms: Process %s completed a CPU burst; %d bursts to go [Q%s]" % (time, process, num_bursts[process] - cpu_burst_tracker[process], print_queue(queue)))
-			# print("time %dms: Process %s switching out of CPU; will block on I/O until time %dms [Q%s]", % time, process, io_bursts[process][cpu_burst_tracker[process]-1], print_queue(queue))
-		# for process in blocked_tracker:
-		# 	if time == blocked_tracker[process]:
-		# 		print("time %dms: Process %s completed a CPU burst; %d bursts to go [Q%s]", % time, process, num_bursts[process] - cpu_burst_tracker[process], print_queue(queue))
-
-
+			if (num_bursts[head] - cpu_burst_tracker[head] > 0):
+				print("time %dms: Process %s completed a CPU burst; %d bursts to go [Q%s]" % (time, head, num_bursts[head] - cpu_burst_tracker[head], print_queue(queue)))
+				print("time %dms: Process %s switching out of CPU; will block on I/O until time %dms [Q%s]" % (time, head, time + io_bursts[head][cpu_burst_tracker[head]-1], print_queue(queue)))
+				IO_blocked_tracker[head] = time + io_bursts[head][cpu_burst_tracker[head]-1]
+			else:
+				print("time %dms: Process %s terminated Q[%s]" %(time, head, print_queue(queue)))
+			CPU_used = False
+		# print(IO_blocked_tracker)
+		for process in IO_blocked_tracker:
+			if time == IO_blocked_tracker[process]:
+				queue.append(process)
+				print("time %dms: Process %s completed I/O; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
 		time += 1
-		if (time == 2000):
-			 break
+		# if (time == 2000):
+		# 	 break
 FCFS()
 
