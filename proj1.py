@@ -211,7 +211,7 @@ def SJF():
 			else:
 				CPU_free = True
 		time += 1
-	print("time %dms: Simulator ended for SJF [Q%s]" %(time+1, print_queue(queue)))
+	print("time %dms: Simulator ended for SJF [Q%s]" %(time+int(sys.argv[5])/2, print_queue(queue)))
 	return (tot_wait, tot_turnaround)
 	
 
