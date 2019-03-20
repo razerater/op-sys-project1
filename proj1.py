@@ -28,9 +28,11 @@ def gen_exp():
 		unif_distr = r.drand()
 		exp_distr = -1 * (math.log(unif_distr)) / float(sys.argv[2])
 	return exp_distr
-def init_vals(seed):
+def init_vals(seed, proc):
 	# Seed RNG
 	r.srand(seed)
+
+	proc+=[chr(ord('A') + x) for x in range(num_processes)]
 
 	# initialize values
 	for i in range(num_processes):
@@ -59,33 +61,36 @@ def FCFS():
 	# 		print("--> CPU burst %d ms --> I/O burst %d ms" % (cpu_bursts[process][j], io_bursts[process][j]))
 	# 	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
 	print("time 0ms: Simulator started for FCFS [Q%s]" % print_queue(queue))
-	fin_processes = []
 	cpu_burst_tracker = {}
 	CPU_blocked_tracker = -1
 	IO_blocked_tracker = {}
-	CPU_used = False
+	CPU_free = True
 	time = 0
 	context_add = -1
 	context_remove = -1
-	while (len(fin_processes) < num_processes):
+	turnaround_tracker = {}
+	tot_turnaround = 0
+	tot_wait = 0
+	while (1):
 		# print(time)
 		# add process from queue
 		if (time == context_add):
 			print("time %dms: Process %s started using the CPU for %dms burst [Q%s]" %(time, head, cpu_bursts[head][cpu_burst_tracker[head]], print_queue(queue)))
 			CPU_blocked_tracker = time + cpu_bursts[head][cpu_burst_tracker[head]]
 			cpu_burst_tracker[head] += 1
-			CPU_used = True
+			CPU_free = False
 		# check arrival
 		for process in init_time:
 			if time == init_time[process]:
 				queue.append(process)
 				cpu_burst_tracker[process] = 0
 				print("time %dms: Process %s arrived; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
-				if (not CPU_used):
+				turnaround_tracker[process] = time
+				if (CPU_free):
 					head = queue[0]
 					queue = queue[1:]
-					context_add = time + int(sys.argv[5])/2		
-		
+					context_add = time + int(sys.argv[5])/2
+					tot_wait += time - turnaround_tracker[head]
 		if (CPU_blocked_tracker == time):
 			if (num_bursts[head] - cpu_burst_tracker[head] > 0):
 				print("time %dms: Process %s completed a CPU burst; %d burst%s to go [Q%s]" % (time, head, num_bursts[head] - cpu_burst_tracker[head], "s" if (num_bursts[head] - cpu_burst_tracker[head] > 1) else "", print_queue(queue)))
@@ -93,27 +98,36 @@ def FCFS():
 				IO_blocked_tracker[head] = time + io_bursts[head][cpu_burst_tracker[head]-1] + 2
 			else:
 				print("time %dms: Process %s terminated [Q%s]" %(time, head, print_queue(queue)))
-				fin_processes.append(head)
+				proc.remove(head)
+				if (len(proc) == 0):
+					tot_turnaround += (time - turnaround_tracker[head] + int(sys.argv[5]) / 2)
+					break
 			context_remove = time + int(sys.argv[5]) / 2
 		for process in sorted(IO_blocked_tracker):
 			if time == IO_blocked_tracker[process]:
 				queue.append(process)
 				print("time %dms: Process %s completed I/O; added to ready queue [Q%s]" %(time, process, print_queue(queue)))
-				if (not CPU_used):
+				turnaround_tracker[process] = time
+				if (CPU_free):
 					head = queue[0]
 					queue = queue[1:]
 					context_add = time + int(sys.argv[5])/2
-					CPU_used = True
+					tot_wait += time - turnaround_tracker[head]
+					CPU_free = False
+					# print(turnaround_tracker)
 		if (time == context_remove):
+			tot_turnaround += time - turnaround_tracker[head]
 			if (len(queue) != 0):
 				head = queue[0]
 				queue = queue[1:]
 				context_add = time + int(sys.argv[5])/2
-				CPU_used = True
+				tot_wait += time - turnaround_tracker[head]
+				CPU_free = False
 			else:
-				CPU_used = False
+				CPU_free = True
 		time += 1
-	print("time %dms: Simulator ended for FCFS [Q%s]" %(time+1, print_queue(queue)))
+	print("time %dms: Simulator ended for FCFS [Q%s]" %(time+int(sys.argv[5])/2, print_queue(queue)))
+	return (tot_wait, tot_turnaround)
 
 def SJF():
 	queue = []
@@ -124,23 +138,25 @@ def SJF():
 	# 		print("--> CPU burst %d ms --> I/O burst %d ms" % (cpu_bursts[process][j], io_bursts[process][j]))
 	# 	print("--> CPU burst %d ms" %(cpu_bursts[process][num_bursts[process]-1]))
 	print("time 0ms: Simulator started for SJF [Q%s]" % print_queue(queue))
-	fin_processes = []
 	cpu_burst_tracker = {}
 	CPU_blocked_tracker = -1
 	IO_blocked_tracker = {}
+	turnaround_tracker = {}
 	tau_tracker = {}
-	CPU_used = False
+	CPU_free = True
 	time = 0
+	tot_turnaround = 0
+	tot_wait = 0
 	context_add = -1
 	context_remove = -1
-	while (len(fin_processes) < num_processes):
+	while (1):
 		# print(time)
 		# add process from queue
 		if (time == context_add):
 			print("time %dms: Process %s started using the CPU for %dms burst [Q%s]" %(time, head, cpu_bursts[head][cpu_burst_tracker[head]], print_queue(queue)))
 			CPU_blocked_tracker = time + cpu_bursts[head][cpu_burst_tracker[head]]
 			cpu_burst_tracker[head] += 1
-			CPU_used = True
+			CPU_free = False
 		# check arrival
 		for process in init_time:
 			if time == init_time[process]:
@@ -150,10 +166,12 @@ def SJF():
 				queue = sorted(queue)
 				queue = sorted(queue, key = lambda x: tau_tracker[x])
 				print("time %dms: Process %s (tau %dms) arrived; added to ready queue [Q%s]" %(time, process, tau_tracker[process], print_queue(queue)))
-				if (not CPU_used):
+				turnaround_tracker[process] = time
+				if (CPU_free):
 					head = queue[0]
 					queue = queue[1:]
-					context_add = time + int(sys.argv[5])/2		
+					context_add = time + int(sys.argv[5])/2	
+					tot_wait += time - turnaround_tracker[head]	
 		
 		if (CPU_blocked_tracker == time):
 			if (num_bursts[head] - cpu_burst_tracker[head] > 0):
@@ -164,7 +182,10 @@ def SJF():
 				IO_blocked_tracker[head] = time + io_bursts[head][cpu_burst_tracker[head]-1] + 2
 			else:
 				print("time %dms: Process %s terminated [Q%s]" %(time, head, print_queue(queue)))
-				fin_processes.append(head)
+				proc.remove(head)
+				if (len(proc) == 0):
+					tot_turnaround += (time - turnaround_tracker[head] + int(sys.argv[5]) / 2)
+					break
 			context_remove = time + int(sys.argv[5]) / 2
 		for process in sorted(IO_blocked_tracker):
 			if time == IO_blocked_tracker[process]:
@@ -172,22 +193,26 @@ def SJF():
 				queue = sorted(queue)
 				queue = sorted(queue, key = lambda x: tau_tracker[x])
 				print("time %dms: Process %s (tau %dms) completed I/O; added to ready queue [Q%s]" %(time, process, tau_tracker[process], 	print_queue(queue)))
-				if (not CPU_used):
+				turnaround_tracker[process] = time
+				if (CPU_free):
 					head = queue[0]
 					queue = queue[1:]
 					context_add = time + int(sys.argv[5])/2
-					CPU_used = True
+					tot_wait += time - turnaround_tracker[head]
+					CPU_free = False
 		if (time == context_remove):
+			tot_turnaround += time - turnaround_tracker[head]
 			if (len(queue) != 0):
 				head = queue[0]
 				queue = queue[1:]
 				context_add = time + int(sys.argv[5])/2
-				CPU_used = True
+				CPU_free = False
+				tot_wait += time - turnaround_tracker[head]
 			else:
-				CPU_used = False
+				CPU_free = True
 		time += 1
 	print("time %dms: Simulator ended for SJF [Q%s]" %(time+1, print_queue(queue)))
-
+	return (tot_wait, tot_turnaround)
 	
 
 def avg_cpu_burst():
@@ -199,36 +224,30 @@ def avg_cpu_burst():
 			tot += burst
 	return float(tot)/count
 
-def tot_context_switch():
-	tot = 0
-	for lt in num_bursts:
-		tot += num_bursts[lt]
-	return tot
 r = Rand48(0)
 num_processes = int(sys.argv[4])
-proc = [chr(ord('A') + x) for x in range(num_processes)]
+proc = []
 init_time = {}
 num_bursts = {}
 cpu_bursts = {}
 io_bursts = {}
 
-init_vals(int(sys.argv[1]))
-# FCFS()
+init_vals(int(sys.argv[1]), proc)
+x = FCFS()
 
-# init_vals(int(sys.argv[1]))
-# SJF()
+init_vals(int(sys.argv[1]), proc)
+y = SJF()
 
 print ("Algorithm FCFS")
-print ("-- average CPU burst time: %.3f" % avg_cpu_burst())
-print ("-- average wait time:")
-print ("-- average turnaround time:")
-print ("-- total number of context switches: %d" % tot_context_switch())
+print ("-- average CPU burst time: %.3f ms" % avg_cpu_burst())
+print ("-- average wait time: %.3f ms" % (float(x[0])/sum(num_bursts.values())))
+print ("-- average turnaround time: %.3f ms" % (float(x[1])/sum(num_bursts.values())))
+print ("-- total number of context switches: %d" % sum(num_bursts.values()))
 print ("-- total number of preemptions: 0")
 
 print ("Algorithm SJF")
-print ("-- average CPU burst time: %.3f" % avg_cpu_burst())
-print ("-- average wait time:")
-print ("-- average turnaround time:")
-print ("-- total number of context switches: %d" % tot_context_switch())
+print ("-- average CPU burst time: %.3f ms" % avg_cpu_burst())
+print ("-- average wait time: %.3f ms" % (float(y[0])/sum(num_bursts.values())))
+print ("-- average turnaround time: %.3f ms" % (float(y[1])/sum(num_bursts.values())))
+print ("-- total number of context switches: %d" % sum(num_bursts.values()))
 print ("-- total number of preemptions: 0")
-# init_vals(int(sys.argv[1]))
